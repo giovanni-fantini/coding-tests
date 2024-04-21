@@ -1,0 +1,33 @@
+{
+  "name": "motorway-takehome-backend",
+  "version": "1.0.0",
+  "description": "G. Fantini solution for Motorway test",
+  "main": "index.js",
+  "scripts": {
+    "load_test_api": "bash test_support/load_test.sh",
+    "setup_tests": "bash test_support/test_setup.sh",
+    "start": "node index.js",
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "convict": "^6.2.4",
+    "express": "^4.18.2",
+    "express-validator": "^6.15.0",
+    "pg": "^8.9.0",
+    "sequelize": "^6.28.0"
+  },
+  "devDependencies": {
+    "jest": "^29.4.3",
+    "loadtest": "^5.2.0",
+    "supertest": "^6.3.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+<h1 class="text-6xl font-normal leading-normal mt-0 mb-2 text-blue-800">
+  Projects
+</h1>
+
+<ul>
+  <% @projects.each do |project| %>
+  <li>
+    <button
+      class="text-slate-500 background-transparent font-bold uppercase px-3 py-1 text-xs outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
+      type="button">
+      <%= link_to project.name, project %>
+    </button>
+  </li>
+  <% end %>
+</ul>

@@ -1,0 +1,22 @@
+<!-- component -->
+<!-- comment form -->
+<div class="flex mx-auto items-center justify-center shadow-lg mt-56 mx-8 mb-4 max-w-lg">
+<%= simple_form_for project do |form| %>
+      <div class="flex flex-wrap -mx-3 mb-6">
+         <h2 class="px-4 pt-3 pb-2 text-gray-800 text-lg">Change status</h2>
+         <div class="w-full md:w-full px-3 mb-2 mt-2">
+    <%= form.label :status %>
+    <%= form.select :status, Project::STATUSES.map{ |key| [key.humanize, key] }, selected: @project.status %>
+    <% project.errors.full_messages_for(:status).each do |message| %>
+      <div><%= message %></div>
+    <% end %>
+         </div>
+          <button class="bg-sky-500 text-white active:bg-sky-600 font-bold uppercase text-xs px-4 py-2 rounded shadow hover:shadow-md outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150" type="button"
+                >
+            <%= form.submit %>
+          </button>
+         </div>
+      </form>
+   </div>
+   <% end %>
+</div>

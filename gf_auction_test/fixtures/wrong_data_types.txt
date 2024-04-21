@@ -1,0 +1,4 @@
+something|1|SELL|toaster_1|10.00|20
+10|something_else|BID|toaster_1|7.50
+11|8|BID|toaster_1|False
+12|8|BID|toaster_1|7.50

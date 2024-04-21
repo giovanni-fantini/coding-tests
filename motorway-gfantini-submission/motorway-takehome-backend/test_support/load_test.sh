@@ -1,0 +1,1 @@
+loadtest -t 20 -c 10 --rps 5  http://localhost:3000/vehicle\?vehicleId\=3\&timestamp\=2022-09-12T12:41:42Z

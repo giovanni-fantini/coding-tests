@@ -1,0 +1,10 @@
+
+{
+  "db": {
+    "port": 5432,
+    "user": "postgres",
+    "name": "motorway-test",
+    "host": "localhost",
+    "password": "admin" 
+  }
+}

@@ -1,0 +1,5 @@
+- 2 items A for £60
+- 3 items B for £75
+3 items C for £80
+- 10% off total basket cost for baskets worth over £150 (after previous discounts)
+20% off total basket cost for baskets worth over £200

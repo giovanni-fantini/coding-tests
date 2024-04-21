@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Homey</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+  <%= stylesheet_link_tag "tailwind", "inter-font", "data-turbo-track": "reload" %>
+
+  <%= stylesheet_link_tag "application" %>
+</head>
+
+<body>
+  <% if notice %>
+  <p class="alert alert-success"><%= notice %></p>
+  <% end %>
+  <% if alert %>
+  <p class="alert alert-danger"><%= alert %></p>
+  <% end %>
+  <nav class="relative flex flex-wrap items-center justify-between px-2 py-3 bg-blue-500 mb-3">
+    <div class="container px-4 mx-auto flex flex-wrap items-center justify-between">
+      <div class="w-full relative flex justify-between lg:w-auto  px-4 lg:static lg:block lg:justify-start">
+        <a class="text-sm font-bold leading-relaxed inline-block mr-4 py-2 whitespace-nowrap uppercase text-white"
+          href="/projects">
+          Projects Home
+        </a>
+        <button
+          class="cursor-pointer text-xl leading-none px-3 py-1 border border-solid border-transparent rounded bg-transparent block lg:hidden outline-none focus:outline-none"
+          type="button">
+          <span class="block relative w-6 h-px rounded-sm bg-white"></span>
+          <span class="block relative w-6 h-px rounded-sm bg-white mt-1"></span>
+          <span class="block relative w-6 h-px rounded-sm bg-white mt-1"></span>
+        </button>
+      </div>
+      <div class="lg:flex flex-grow items-center" id="example-navbar-warning">
+        <ul class="flex flex-col lg:flex-row list-none ml-auto">
+          <% if user_signed_in? %>
+          <li class="nav-item">
+            <p class="px-3 py-2 flex items-center text-xs uppercase font-bold leading-snug text-white">
+              Welcome <%= current_user.email %>
+            </p>
+          <li class="nav-item">
+            <div
+              class="px-3 py-2 flex items-center text-xs uppercase font-bold leading-snug text-white hover:opacity-75">
+              <%= button_to 'Sign out', destroy_user_session_path, method: :delete %>
+            </div>
+          </li>
+          <% else %>
+          <li class="nav-item">
+            <div
+              class="px-3 py-2 flex items-center text-xs uppercase font-bold leading-snug text-white hover:opacity-75">
+              <%= button_to "Sign in", new_user_session_path %>
+            </div>
+          </li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <%= yield %>
+</body>
+
+</html>

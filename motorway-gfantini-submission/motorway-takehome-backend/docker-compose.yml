@@ -1,0 +1,27 @@
+version: "1.0"
+
+services:
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=motorway
+    ports:
+      - 5432:5432
+    volumes:
+      - ./migrations/01_init.sql:/docker-entrypoint-initdb.d/01_init.sql
+  app:
+    image: node:18
+    container_name: app
+    build: .
+    ports:
+      - 3000:3000
+    environment:
+      DB_HOST: postgres
+      DB_NAME: motorway
+      DB_USER: user
+      DB_PORT: 5432
+    depends_on:
+      - postgres
