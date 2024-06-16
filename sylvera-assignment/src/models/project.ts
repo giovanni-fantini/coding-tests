@@ -18,8 +18,14 @@ export async function getAllProjects(): Promise<Project[]> {
   return rows;
 }
 
-export async function getProjectById(id: string): Promise<Project | undefined> {
+export async function getProjectById(id: string): Promise<Project> {
   const db: Database<sqlite3.Database, sqlite3.Statement> = await dbPromise;
-  const row: Project | undefined = await db.get('SELECT * FROM projects WHERE id = ?', id);
+  const row: Project = await db.all('SELECT * FROM projects WHERE id = ?', id);
+  return row;
+}
+
+export async function getAllProjectsGroupedBy(group_by_column: string): Promise<Project> {
+  const db: Database<sqlite3.Database, sqlite3.Statement> = await dbPromise;
+  const row: Project = await db.all('SELECT * FROM projects GROUP_BY', group_by_column);
   return row;
 }

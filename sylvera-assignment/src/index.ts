@@ -30,5 +30,3 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 app.listen(port, () => {
   console.log(`Server is listening on http://localhost:${port}`);
 });
-
-GET http://localhost:3000/projects HTTP/1.1

@@ -14,14 +14,16 @@ export async function getAllProjectsHandler(req: Request, res: Response): Promis
 export async function getProjectByIdHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
   try {
-    const projectDetails = await project.getProjectById(id);
-    if (projectDetails) {
-      res.json(projectDetails);
-    } else {
+    const project_object = await project.getProjectById(id);
+    if ( project_object ) {
+      res.json(project_object);
+    }
+    else {
+      console.error('Project not found');
       res.status(404).json({ error: 'Project not found' });
     }
   } catch (error) {
-    console.error(`Error fetching project with id ${id}:`, error);
+    console.error('Error fetching projects:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
