@@ -1,18 +1,15 @@
 import uuid
-from sqlalchemy import Column, String, text
-from sqlalchemy.dialects.mysql import VARCHAR
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, String
 from pydantic import BaseModel, UUID4
 from typing import Optional, Dict
 from datetime import datetime
-
-Base = declarative_base()
+from app.db import Base
 
 # SQLAlchemy Model
 class Person(Base):
     __tablename__ = "people"
 
-    id = Column(VARCHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()), server_default=text("UUID()"))
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String(255), index=True)
 
 # Pydantic Models
@@ -21,7 +18,7 @@ class PersonBase(BaseModel):
     name: str
 
     class Config:
-        from_attributes = True  # Enable ORM mode for compatibility with SQLAlchemy models
+        from_attributes = True
 
 class PersonAdded(BaseModel):
     person_id: UUID4
@@ -45,4 +42,4 @@ class GetNameResponse(BaseModel):
     name: Optional[str]
 
     class Config:
-        from_attributes = True  # Enable ORM mode for compatibility with SQLAlchemy models
+        from_attributes = True

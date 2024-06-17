@@ -1,43 +1,47 @@
-# import pytest
-# from sqlalchemy import create_engine
-# from sqlalchemy.orm import sessionmaker
-# from fastapi.testclient import TestClient
-# from app.main import app
-# from app.db import Base, get_db
+import pytest
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+from fastapi.testclient import TestClient
+from app.main import app
+from app.db import Base, get_db, engine_factory
 
-# # Test-specific Database URL
-# settings.database_url = "sqlite:///./test.db"
+SQLALCHEMY_DATABASE_URL = "sqlite://"
 
-# # Create the SQLite engine
-# engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
-# TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = engine_factory(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# # Override the dependency to use the test database
-# def override_get_db():
-#     try:
-#         db = TestingSessionLocal()
-#         yield db
-#     finally:
-#         db.close()
+def override_get_db():
+    try:
+        db = TestingSessionLocal()
+        yield db
+    finally:
+        db.close()
 
-# app.dependency_overrides[get_db] = override_get_db
+app.dependency_overrides[get_db] = override_get_db
 
-# # Create a fixture for the client
-# @pytest.fixture(scope="module")
-# def client():
-#     # Setup
-#     Base.metadata.create_all(bind=engine)
-#     test_client = TestClient(app)
-    
-#     yield test_client  # Testing happens here
-    
-#     # Teardown
-#     Base.metadata.drop_all(bind=engine)
+# Create a fixture for setting up the database
+@pytest.fixture(scope="module")
+def setup_database():
+    # Setup: Create the tables
+    Base.metadata.create_all(bind=engine)
+    yield
+    # Teardown: Drop the tables
+    Base.metadata.drop_all(bind=engine)
 
-# @pytest.fixture(scope="module")
-# def db_session():
-#     db = TestingSessionLocal()
-#     try:
-#         yield db
-#     finally:
-#         db.close()
+# Create a fixture for the FastAPI test client
+@pytest.fixture(scope="module")
+def client(setup_database):
+    return TestClient(app)
+
+# Create a fixture for the database session
+@pytest.fixture
+def db_session(setup_database):
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

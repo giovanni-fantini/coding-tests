@@ -1,12 +1,9 @@
-from fastapi import FastAPI, Depends, HTTPException, Request
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
-from pydantic import UUID4
+from fastapi import FastAPI, Depends, HTTPException
+from pydantic import UUID4, ValidationError
 from sqlalchemy.orm import Session
-from app.db import engine, metadata, get_db
+from app.db import get_db
 from app.services import add_person, rename_person, remove_person, get_person
 from app.models import PersonAdded, PersonRenamed, PersonRemoved, WebhookPayload, GetNameResponse
-from contextlib import asynccontextmanager
 
 app = FastAPI(
     title="Elysian Insurance Services - Claim Conductor Phonebook Integration",
@@ -14,26 +11,10 @@ app = FastAPI(
     version="1.0.0",
 )
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Setup code (startup)
-    metadata.create_all(bind=engine)
-    yield
-    # Teardown code (shutdown)
-    # metadata.drop_all(bind=engine)
-
-app.router.lifespan_context = lifespan(app)
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    return JSONResponse(
-        status_code=400,
-        content={"detail": "Invalid input"}
-    )
-
 @app.post("/accept_webhook", responses={
     200: {"description": "Webhook processed successfully"},
     400: {"description": "Invalid input"},
+    404: {"description": "Person not found"},
     500: {"description": "Server error"}
 })
 def accept_webhook(payload: WebhookPayload, db: Session = Depends(get_db)):
@@ -44,13 +25,15 @@ def accept_webhook(payload: WebhookPayload, db: Session = Depends(get_db)):
         elif payload.payload_type == "PersonRenamed":
             person_data = PersonRenamed(**payload.payload_content)
             if not rename_person(db, person_data):
-                raise HTTPException(status_code=400, detail="Invalid input")
+                raise HTTPException(status_code=404, detail="Person not found")
         elif payload.payload_type == "PersonRemoved":
             person_data = PersonRemoved(**payload.payload_content)
             if not remove_person(db, person_data):
-                raise HTTPException(status_code=400, detail="Invalid input")
+                raise HTTPException(status_code=404, detail="Person not found")
         else:
             raise HTTPException(status_code=400, detail="Invalid input")
+    except ValidationError:
+        raise HTTPException(status_code=400, detail="Invalid input")
     except HTTPException:
         raise
     except Exception as e:

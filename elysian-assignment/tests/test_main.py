@@ -1,39 +1,21 @@
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
-from app.db import Base, get_db
-from main import app
+import pytest
+import uuid
+from sqlalchemy.orm import Session
+from app.models import Person
 
-SQLALCHEMY_DATABASE_URL = "sqlite://"
+@pytest.fixture
+def seed_person(db_session: Session):
+    person_id = str(uuid.uuid4())
+    person = Person(id=person_id, name="Test User")
+    db_session.add(person)
+    db_session.commit()
+    return person_id
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-Base.metadata.create_all(bind=engine)
-
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-
-client = TestClient(app)
-
-def test_accept_webhook_add(client, db_session, db_clear):
+def test_accept_webhook_add(client):
     payload = {
         "payload_type": "PersonAdded",
         "payload_content": {
-            "person_id": "cd77cd08-2e66-4992-9b6d-d22957f96022",
+            "person_id": str(uuid.uuid4()),
             "name": "Test User",
             "timestamp": "2023-10-10T12:34:56Z"
         }
@@ -42,45 +24,24 @@ def test_accept_webhook_add(client, db_session, db_clear):
     assert response.status_code == 200
     assert response.json() == {"detail": "Webhook processed successfully"}
 
-def test_accept_webhook_rename(client, db_session, db_clear):
-    payload_add = {
-        "payload_type": "PersonAdded",
-        "payload_content": {
-            "person_id": "cd77cd08-2e66-4992-9b6d-d22957f96022",
-            "name": "Test User",
-            "timestamp": "2023-10-10T12:34:56Z"
-        }
-    }
-    client.post("/accept_webhook", json=payload_add)
-
+def test_accept_webhook_rename(client, seed_person):
     payload_rename = {
         "payload_type": "PersonRenamed",
         "payload_content": {
-            "person_id": "cd77cd08-2e66-4992-9b6d-d22957f96022",
+            "person_id": seed_person,
             "name": "Updated User",
             "timestamp": "2023-10-11T12:34:56Z"
         }
     }
-
     response = client.post("/accept_webhook", json=payload_rename)
     assert response.status_code == 200
     assert response.json() == {"detail": "Webhook processed successfully"}
 
-def test_accept_webhook_remove(client, db_session, db_clear):
-    payload_add = {
-        "payload_type": "PersonAdded",
-        "payload_content": {
-            "person_id": "cd77cd08-2e66-4992-9b6d-d22957f96022",
-            "name": "Test User",
-            "timestamp": "2023-10-10T12:34:56Z"
-        }
-    }
-    client.post("/accept_webhook", json=payload_add)
-
+def test_accept_webhook_remove(client, seed_person):
     payload_remove = {
         "payload_type": "PersonRemoved",
         "payload_content": {
-            "person_id": "cd77cd08-2e66-4992-9b6d-d22957f96022",
+            "person_id": seed_person,
             "timestamp": "2023-10-12T12:34:56Z"
         }
     }
@@ -88,22 +49,87 @@ def test_accept_webhook_remove(client, db_session, db_clear):
     assert response.status_code == 200
     assert response.json() == {"detail": "Webhook processed successfully"}
 
-def test_get_name(client, db_session, db_clear):
-    payload_add = {
+def test_get_name(client, seed_person):
+    response = client.get(f"/get_name?person_id={seed_person}")
+    assert response.status_code == 200
+    assert response.json() == {"name": "Test User"}
+
+def test_get_name_not_found(client):
+    response = client.get("/get_name", params={"person_id": str(uuid.uuid4())})
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Person not found"}
+
+def test_invalid_payload_type(client):
+    payload = {
+        "payload_type": "InvalidType",
+        "payload_content": {}
+    }
+    response = client.post("/accept_webhook", json=payload)
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Invalid input"}
+
+def test_invalid_person_added_payload(client):
+    payload = {
         "payload_type": "PersonAdded",
         "payload_content": {
-            "person_id": "cd77cd08-2e66-4992-9b6d-d22957f96022",
+            "person_id": "not-a-uuid",
             "name": "Test User",
             "timestamp": "2023-10-10T12:34:56Z"
         }
     }
-    client.post("/accept_webhook", json=payload_add)
+    response = client.post("/accept_webhook", json=payload)
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Invalid input"}
+    
+def test_invalid_person_renamed_payload(client):
+    payload = {
+        "payload_type": "PersonRenamed",
+        "payload_content": {
+            "person_id": "not-a-uuid",
+            "name": "Test User",
+            "timestamp": "2023-10-10T12:34:56Z"
+        }
+    }
+    response = client.post("/accept_webhook", json=payload)
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Invalid input"}
 
-    response = client.get("/get_name", params={"person_id": "cd77cd08-2e66-4992-9b6d-d22957f96022"})
-    assert response.status_code == 200
-    assert response.json() == {"name": "Test User"}
-
-def test_get_name_not_found(client, db_session, db_clear):
-    response = client.get("/get_name", params={"person_id": "cd77cd08-2e66-4992-9b6d-d22957f96022"})
-    assert response.status_code == 404  # Adjust response code as per your logic
+def test_invalid_person_removed_payload(client):
+    payload = {
+        "payload_type": "PersonRemoved",
+        "payload_content": {
+            "person_id": "not-a-uuid",
+            "name": "Test User",
+            "timestamp": "2023-10-10T12:34:56Z"
+        }
+    }
+    response = client.post("/accept_webhook", json=payload)
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Invalid input"}
+    
+def test_person_renamed_not_found(client):
+    payload = {
+        "payload_type": "PersonRenamed",
+        "payload_content": {
+            "person_id": str(uuid.uuid4()),
+            "name": "Test User",
+            "timestamp": "2023-10-10T12:34:56Z"
+        }
+    }
+    response = client.post("/accept_webhook", json=payload)
+    assert response.status_code == 404
     assert response.json() == {"detail": "Person not found"}
+    
+def test_person_removed_not_found(client):
+    payload = {
+        "payload_type": "PersonRemoved",
+        "payload_content": {
+            "person_id": str(uuid.uuid4()),
+            "name": "Test User",
+            "timestamp": "2023-10-10T12:34:56Z"
+        }
+    }
+    response = client.post("/accept_webhook", json=payload)
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Person not found"}
+    
