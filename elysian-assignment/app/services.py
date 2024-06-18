@@ -64,6 +64,10 @@ def translate_nl_to_sql(nl_query: str) -> dict:
     return sql_info.strip()
 
 def parse_openai_response(response: str) -> dict:
+    # Strip leading and trailing whitespace/newlines
+    response = response.strip()
+    print(response)
+    
     # Extract SQL template
     sql_template_match = re.search(r"```sql\n(.*?)\n```", response, re.DOTALL)
     if not sql_template_match:

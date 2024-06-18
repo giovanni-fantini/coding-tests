@@ -6,9 +6,9 @@ from app.db import get_db
 from app.services import add_person, rename_person, remove_person, get_person, translate_nl_to_sql, parse_openai_response, format_and_execute_sql
 from app.models import PersonAdded, PersonRenamed, PersonRemoved, WebhookPayload, GetNameResponse, QueryRequest, QueryResponse
 
-# Set up logging configuration
-logging.basicConfig()
-logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
+# # Set up logging configuration
+# logging.basicConfig()
+# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 app = FastAPI(
     title="Elysian Insurance Services - Claim Conductor Phonebook Integration",
