@@ -1,83 +1,29 @@
 import logging
-from fastapi import FastAPI, Depends, HTTPException
-from pydantic import UUID4, ValidationError
-from sqlalchemy.orm import Session
-from app.db import get_db
-from app.services import add_person, rename_person, remove_person, get_person, translate_nl_to_sql, parse_openai_response, format_and_execute_sql
-from app.models import PersonAdded, PersonRenamed, PersonRemoved, WebhookPayload, GetNameResponse, QueryRequest, QueryResponse
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
+from app.api import router
 
-# # Set up logging configuration
-# logging.basicConfig()
-# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
-
+# Initialize FastAPI app
 app = FastAPI(
     title="Elysian Insurance Services - Claim Conductor Phonebook Integration",
     description="Service that handles incoming webhook notifications from a phonebook, manages internal state, and allows querying for current user names.",
     version="1.0.0",
 )
 
-@app.post("/accept_webhook", responses={
-    200: {"description": "Webhook processed successfully"},
-    400: {"description": "Invalid input"},
-    404: {"description": "Person not found"},
-    500: {"description": "Server error"}
-})
-def accept_webhook(payload: WebhookPayload, db: Session = Depends(get_db)):
-    try:
-        if payload.payload_type == "PersonAdded":
-            person_data = PersonAdded(**payload.payload_content)
-            add_person(db, person_data)
-        elif payload.payload_type == "PersonRenamed":
-            person_data = PersonRenamed(**payload.payload_content)
-            if not rename_person(db, person_data):
-                raise HTTPException(status_code=404, detail="Person not found")
-        elif payload.payload_type == "PersonRemoved":
-            person_data = PersonRemoved(**payload.payload_content)
-            if not remove_person(db, person_data):
-                raise HTTPException(status_code=404, detail="Person not found")
-        else:
-            raise HTTPException(status_code=400, detail="Invalid input")
-    except ValidationError:
-        raise HTTPException(status_code=400, detail="Invalid input")
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f'Server error: {str(e)}')
+# Include API router
+app.include_router(router)
 
-    return {"detail": "Webhook processed successfully"}
+# Enable CORS for frontend access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/get_name", response_model=GetNameResponse, responses={
-    200: {"description": "Name fetched successfully"},
-    404: {"description": "Person not found"},
-    422: {"description": "Invalid UUID format"},
-    500: {"description": "Server error"}
-})
-async def get_name(person_id: UUID4, db: Session = Depends(get_db)):
-    try:
-        person = get_person(db, person_id)
-        if not person:
-            raise HTTPException(status_code=404, detail="Person not found")
-        return {"name": person.name}
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=500, detail="Server error")
-    
-@app.post("/execute_custom_nl_query", response_model=QueryResponse, responses={
-    200: {"description": "Query executed successfully"},
-    400: {"description": "Invalid input"},
-    500: {"description": "Server error"}
-})
-async def execute_custom_nl_query(query_request: QueryRequest, db: Session = Depends(get_db)):
-    try:
-        # Convert natural language to SQL
-        sql_info_raw = translate_nl_to_sql(query_request.natural_language_query)
-
-        # Parse OpenAI response
-        sql_info = parse_openai_response(sql_info_raw)
-
-        # Format and Execute the SQL query
-        result = format_and_execute_sql(db, sql_info)
-        return {"result": result} 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+@app.get("/nl-to-sql", response_class=HTMLResponse)
+async def serve_nl_to_sql():
+    with open("nl_to_sql.html") as f:
+        return HTMLResponse(f.read())

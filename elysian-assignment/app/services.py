@@ -66,7 +66,6 @@ def translate_nl_to_sql(nl_query: str) -> dict:
 def parse_openai_response(response: str) -> dict:
     # Strip leading and trailing whitespace/newlines
     response = response.strip()
-    print(response)
     
     # Extract SQL template
     sql_template_match = re.search(r"```sql\n(.*?)\n```", response, re.DOTALL)
@@ -100,20 +99,19 @@ def format_and_execute_sql(db: Session, sql_info: dict):
         # Create a text query using SQLAlchemy's text construct
         query = text(query_template)
 
-        print(query)
-        print(params)
+        # Validate SQL template
+        if not query_template or not params:
+            raise ValueError("Invalid SQL template or parameters")
+
         # Execute the SQL query
         result = db.execute(query, params)
         db.commit()
 
         # Fetch and format result rows
         rows = result.fetchall()
-        # Debug output of the rows fetched
-        print(f"Fetched rows: {rows}")
         
         columns = result.keys()
         results = [dict(zip(columns, row)) for row in rows]
-        print(f"Results: {results}")
 
         if not results:
             return "No results found."
@@ -121,4 +119,7 @@ def format_and_execute_sql(db: Session, sql_info: dict):
         return results
     except SQLAlchemyError as e:
         db.rollback()
-        raise Exception(f"SQL execution error: {str(e)}")
+        raise e  # Raise SQLAlchemyError to be caught in endpoint
+    except Exception as e:
+        db.rollback()
+        raise e  # Raise Exception to be caught in endpoint

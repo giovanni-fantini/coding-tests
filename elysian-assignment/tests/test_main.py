@@ -133,3 +133,8 @@ def test_person_removed_not_found(client):
     assert response.status_code == 404
     assert response.json() == {"detail": "Person not found"}
     
+def test_serve_nl_to_sql_html(client):
+    response = client.get("/nl-to-sql")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert "<!DOCTYPE html>" in response.text
