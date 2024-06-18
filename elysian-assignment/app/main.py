@@ -1,9 +1,10 @@
+import json
 from fastapi import FastAPI, Depends, HTTPException
 from pydantic import UUID4, ValidationError
 from sqlalchemy.orm import Session
 from app.db import get_db
-from app.services import add_person, rename_person, remove_person, get_person
-from app.models import PersonAdded, PersonRenamed, PersonRemoved, WebhookPayload, GetNameResponse
+from app.services import add_person, rename_person, remove_person, get_person, translate_nl_to_sql
+from app.models import PersonAdded, PersonRenamed, PersonRemoved, WebhookPayload, GetNameResponse, QueryRequest, QueryResponse
 
 app = FastAPI(
     title="Elysian Insurance Services - Claim Conductor Phonebook Integration",
@@ -57,3 +58,27 @@ async def get_name(person_id: UUID4, db: Session = Depends(get_db)):
         raise
     except Exception:
         raise HTTPException(status_code=500, detail="Server error")
+    
+@app.post("/execute_custom_nl_query", response_model=QueryResponse, responses={
+    200: {"description": "Query executed successfully"},
+    400: {"description": "Invalid input"},
+    500: {"description": "Server error"}
+})
+async def execute_custom_nl_query(query_request: QueryRequest, db: Session = Depends(get_db)):
+    try:
+        breakpoint()
+        response = translate_nl_to_sql()
+        
+        try:
+            sql_info = json.loads(response.choices[0].text.strip())
+            query_template = sql_info["query_template"]
+            params = sql_info["params"]
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid response format from OpenAI")
+
+    #     # Execute the SQL query
+    #     result = execute_sql_query(db, query_template, params)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
+    return {"result": result}

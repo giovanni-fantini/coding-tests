@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     mariadb_user: str
     mariadb_password: str
     mariadb_database: str
+    openai_api_key: str
 
     class Config:
         env_file = ".env"

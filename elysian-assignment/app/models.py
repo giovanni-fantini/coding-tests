@@ -43,3 +43,9 @@ class GetNameResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class QueryRequest(BaseModel):
+    natural_language_query: str
+
+class QueryResponse(BaseModel):
+    result: str
