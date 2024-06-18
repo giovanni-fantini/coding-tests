@@ -20,6 +20,7 @@ services:
       - db
     environment:
       DATABASE_URL: mysql+pymysql://${MARIADB_USER}:${MARIADB_PASSWORD}@db/${MARIADB_DATABASE}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     ports:
       - "${APP_PORT}:8000"
     volumes:

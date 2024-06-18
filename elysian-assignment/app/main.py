@@ -1,10 +1,14 @@
-import json
+import logging
 from fastapi import FastAPI, Depends, HTTPException
 from pydantic import UUID4, ValidationError
 from sqlalchemy.orm import Session
 from app.db import get_db
-from app.services import add_person, rename_person, remove_person, get_person, translate_nl_to_sql
+from app.services import add_person, rename_person, remove_person, get_person, translate_nl_to_sql, parse_openai_response, format_and_execute_sql
 from app.models import PersonAdded, PersonRenamed, PersonRemoved, WebhookPayload, GetNameResponse, QueryRequest, QueryResponse
+
+# Set up logging configuration
+logging.basicConfig()
+logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 
 app = FastAPI(
     title="Elysian Insurance Services - Claim Conductor Phonebook Integration",
@@ -44,8 +48,8 @@ def accept_webhook(payload: WebhookPayload, db: Session = Depends(get_db)):
 
 @app.get("/get_name", response_model=GetNameResponse, responses={
     200: {"description": "Name fetched successfully"},
-    400: {"description": "Invalid UUID format"},
     404: {"description": "Person not found"},
+    422: {"description": "Invalid UUID format"},
     500: {"description": "Server error"}
 })
 async def get_name(person_id: UUID4, db: Session = Depends(get_db)):
@@ -66,19 +70,14 @@ async def get_name(person_id: UUID4, db: Session = Depends(get_db)):
 })
 async def execute_custom_nl_query(query_request: QueryRequest, db: Session = Depends(get_db)):
     try:
-        breakpoint()
-        response = translate_nl_to_sql()
-        
-        try:
-            sql_info = json.loads(response.choices[0].text.strip())
-            query_template = sql_info["query_template"]
-            params = sql_info["params"]
-        except json.JSONDecodeError:
-            raise HTTPException(status_code=400, detail="Invalid response format from OpenAI")
+        # Convert natural language to SQL
+        sql_info_raw = translate_nl_to_sql(query_request.natural_language_query)
 
-    #     # Execute the SQL query
-    #     result = execute_sql_query(db, query_template, params)
+        # Parse OpenAI response
+        sql_info = parse_openai_response(sql_info_raw)
+
+        # Format and Execute the SQL query
+        result = format_and_execute_sql(db, sql_info)
+        return {"result": result} 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
-
-    return {"result": result}

@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy import Column, String
 from pydantic import BaseModel, UUID4
-from typing import Optional, Dict
+from typing import Optional, Dict, List, Any
 from datetime import datetime
 from app.db import Base
 
@@ -48,4 +48,4 @@ class QueryRequest(BaseModel):
     natural_language_query: str
 
 class QueryResponse(BaseModel):
-    result: str
+    result: List[Dict[str, Any]]
