@@ -1,0 +1,3 @@
+[submodule "elysian-app"]
+	path = elysian-app
+	url = https://github.com/giovanni-fantini/elysian-app
