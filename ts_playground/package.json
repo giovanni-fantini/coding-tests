@@ -1,0 +1,16 @@
+{
+  "name": "ts_playground",
+  "version": "1.0.0",
+  "main": "ts_playground.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/jest": "^29.5.13",
+    "ts-jest": "^29.2.5"
+  }
+}
